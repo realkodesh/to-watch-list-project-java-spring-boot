@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 
 import br.com.guilhermelira.listtowatch.entities.ToWatchEntity;
 import br.com.guilhermelira.listtowatch.repository.ToWatchRepository;
+import exception.BadRequestException;
 
 @Service
 public class ToWatchService {
@@ -22,13 +23,6 @@ public class ToWatchService {
 	// Pensando na interação com outros times todas operações, todas operações vai
 	// retornar uma lista
 
-	public List<ToWatchEntity> create(ToWatchEntity towatchEntity) {
-		towatchRepository.save(towatchEntity);
-
-		return list();
-
-	}
-
 	public List<ToWatchEntity> list() { // Criando o GET, que vai ler e trazer todos os objetos
 
 		Sort sort = Sort.by(Direction.DESC, "prioridade").and(Sort.by(Direction.ASC, "id"));
@@ -36,19 +30,36 @@ public class ToWatchService {
 		return towatchRepository.findAll(sort);
 
 	}
-
-	public List<ToWatchEntity> update(Long id, ToWatchEntity towatchEntity) {
-
+	
+	public List<ToWatchEntity> create(ToWatchEntity towatchEntity) {
 		towatchRepository.save(towatchEntity);
 
 		return list();
 
 	}
+
+	public List<ToWatchEntity> update(Long id, ToWatchEntity towatchEntity) {
+
+		towatchRepository.findById(id).ifPresentOrElse((existingToWatchEntity) -> {
+		      towatchEntity.setId(id);
+		      towatchRepository.save(towatchEntity);
+		      
+		 }, () -> {
+		      throw new BadRequestException("ToWatchEntity %d não existe! ".formatted(id));
+		    });
+
+		    return list();
+
+	}
 	
 	public List<ToWatchEntity> delete(Long id){
-		towatchRepository.deleteById(id);
-		
-		return list();
+		towatchRepository.findById(id).ifPresentOrElse((existingToWatchEntity) 
+				-> 
+		      towatchRepository.delete(existingToWatchEntity), () -> {
+		      throw new BadRequestException("ToWatchEntity %d não existe! ".formatted(id));
+		    });
+
+		    return list();
 		
 	}
 
